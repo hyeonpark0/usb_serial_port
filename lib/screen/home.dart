@@ -30,6 +30,10 @@ class _HomeScreenState extends State<HomeScreen> {
 
   TextEditingController _textController = TextEditingController();
 
+  //terminal
+  String? TerminalText;
+  final ScrollController _scrollController = ScrollController();
+
   Future<bool> _openPort(device) async {
     _serialData.clear();
 
@@ -78,12 +82,27 @@ class _HomeScreenState extends State<HomeScreen> {
     return true;
   }
 
+  String getDateToString() {
+    var date = DateTime.fromMillisecondsSinceEpoch(
+        DateTime.now().millisecondsSinceEpoch);
+    return date.hour.toString().padLeft(2, '0') +
+        ":" +
+        date.minute.toString().padLeft(2, '0') +
+        ":" +
+        date.second.toString().padLeft(2, '0') +
+        "." +
+        date.millisecond.toString().padLeft(3, '0');
+  }
+
   void _getPorts() async {
     _ports = [];
     List<UsbDevice> devices = await UsbSerial.listDevices();
     if (!devices.contains(_device)) {
       _openPort(null);
     }
+
+    TerminalText =
+        TerminalText == null ? "" : "$TerminalText" + "${getDateToString()}\n";
     print(devices);
 
     devices.forEach((device) {
@@ -100,10 +119,17 @@ class _HomeScreenState extends State<HomeScreen> {
             },
           )));
     });
-
     setState(() {
       print(_ports);
+      _scrollDown();
     });
+  }
+
+  ///맨 밑으로 자동 포커스
+  void _scrollDown() {
+    // _scrollController.animateTo(0.0,
+    //     duration: Duration(milliseconds: 300), curve: Curves.easeOutSine);
+    _scrollController.jumpTo(_scrollController.position.maxScrollExtent);
   }
 
   @override
@@ -129,9 +155,14 @@ class _HomeScreenState extends State<HomeScreen> {
       appBar: AppBar(
         title: Text('Terminal'),
         actions: [
-          IconButton(onPressed: () {}, icon: Icon(Icons.usb)),
+          IconButton(
+              onPressed: () {
+                _getPorts();
+              },
+              icon: Icon(Icons.usb)),
           IconButton(onPressed: () {}, icon: Icon(Icons.delete_rounded)),
           IconButton(onPressed: () {}, icon: Icon(Icons.search)),
+          IconButton(onPressed: () {}, icon: Icon(Icons.add_circle)),
         ],
         backgroundColor: HomeScreen.my_darkblue,
       ),
@@ -167,26 +198,46 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
       ),
       backgroundColor: HomeScreen.my_darkblue,
-      body: CustomScrollView(
-        slivers: [
-          SliverFillRemaining(
-            child: Column(
+      body: Column(
+        children: [
+          Expanded(
+            flex: 11,
+            child: Container(
+              width: double.infinity,
+              decoration: BoxDecoration(
+                  border: Border.all(color: HomeScreen.my_white),
+                  borderRadius: BorderRadius.circular(8.0)),
+              child: SingleChildScrollView(
+                controller: _scrollController,
+                child: Text(
+                  (TerminalText == null) ? "" : "$TerminalText",
+                  style: TextStyle(color: HomeScreen.my_white),
+                ),
+              ),
+            ),
+          ),
+          SizedBox(
+            height: 5,
+          ),
+          Expanded(
+            flex: 1,
+            child: Row(
               children: [
                 Expanded(
-                  flex: 11,
+                  flex: 6,
                   child: TextField(
-                    readOnly: true,
-                    maxLines: 31,
+                    maxLines: 1,
                     decoration: InputDecoration(
+                      labelStyle: TextStyle(color: HomeScreen.my_red),
                       focusedBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.all(Radius.circular(10.0)),
                         borderSide:
-                            BorderSide(width: 1, color: HomeScreen.my_white),
+                            BorderSide(width: 1, color: Colors.redAccent),
                       ),
                       enabledBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.all(Radius.circular(10.0)),
                         borderSide:
-                            BorderSide(width: 1, color: HomeScreen.my_white),
+                            BorderSide(width: 1, color: Colors.redAccent),
                       ),
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.all(Radius.circular(10.0)),
@@ -197,53 +248,21 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
                 Expanded(
                   flex: 1,
-                  child: Row(
-                    children: [
-                      Expanded(
-                        flex: 6,
-                        child: TextField(
-                          decoration: InputDecoration(
-                            labelStyle: TextStyle(color: HomeScreen.my_red),
-                            focusedBorder: OutlineInputBorder(
-                              borderRadius:
-                                  BorderRadius.all(Radius.circular(10.0)),
-                              borderSide:
-                                  BorderSide(width: 1, color: Colors.redAccent),
-                            ),
-                            enabledBorder: OutlineInputBorder(
-                              borderRadius:
-                                  BorderRadius.all(Radius.circular(10.0)),
-                              borderSide:
-                                  BorderSide(width: 1, color: Colors.redAccent),
-                            ),
-                            border: OutlineInputBorder(
-                              borderRadius:
-                                  BorderRadius.all(Radius.circular(10.0)),
-                            ),
-                          ),
-                          style: TextStyle(color: HomeScreen.my_white),
-                        ),
-                      ),
-                      Expanded(
-                        flex: 1,
-                        child: IconButton(
-                          icon: Icon(Icons.send_rounded),
-                          onPressed: _port == null
-                              ? null
-                              : () async {
-                                  if (_port == null) {
-                                    return;
-                                  }
-                                  String data = _textController.text + "\r\n";
-                                  await _port!.write(
-                                      Uint8List.fromList(data.codeUnits));
-                                  _textController.text = "";
-                                },
-                        ),
-                      )
-                    ],
+                  child: IconButton(
+                    icon: Icon(Icons.send_rounded),
+                    onPressed: _port == null
+                        ? null
+                        : () async {
+                            if (_port == null) {
+                              return;
+                            }
+                            String data = _textController.text + "\r\n";
+                            await _port!
+                                .write(Uint8List.fromList(data.codeUnits));
+                            _textController.text = "";
+                          },
                   ),
-                ),
+                )
               ],
             ),
           ),
