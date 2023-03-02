@@ -2,25 +2,27 @@ import 'dart:async';
 import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'package:test_usb_serial_1/main.dart';
+import 'package:test_usb_serial_1/screen/devices_page.dart';
+import 'package:test_usb_serial_1/screen/settine_page.dart';
 import 'package:usb_serial/transaction.dart';
 import 'package:usb_serial/usb_serial.dart';
 
-class HomeScreen extends StatefulWidget {
-  static const Color my_white = Color(0xFFDDDDDD);
-  static const Color my_darkblue = Color(0xFF222831);
-  static const Color my_blue = Color(0xFF30475E);
-  static const Color my_red = Color(0xFFF05454);
+import '../provider/myProvider.dart';
+import 'adpayment_page.dart';
+import 'infomation_page.dart';
 
-  const HomeScreen({Key? key}) : super(key: key);
+class TerminalPage extends StatefulWidget {
+  const TerminalPage({Key? key}) : super(key: key);
 
   @override
-  State<HomeScreen> createState() => _HomeScreenState();
+  State<TerminalPage> createState() => _TerminalPageState();
 }
 
-class _HomeScreenState extends State<HomeScreen> {
+class _TerminalPageState extends State<TerminalPage> {
   UsbPort? _port;
   UsbDevice? _device;
-  String _status = "Idle";
 
   List<Widget> _ports = [];
   List<Widget> _serialData = [];
@@ -45,7 +47,7 @@ class _HomeScreenState extends State<HomeScreen> {
     if (device == null) {
       _device = null;
       setState(() {
-        _status = "Disconnected";
+        setTerminalText("Disconnected");
       });
       return true;
     }
@@ -53,7 +55,7 @@ class _HomeScreenState extends State<HomeScreen> {
     _port = await device.create();
     if (await (_port!.open()) != true) {
       setState(() {
-        _status = "Failed to open port";
+        setTerminalText("Failed to open port");
       });
       return false;
     }
@@ -77,11 +79,12 @@ class _HomeScreenState extends State<HomeScreen> {
     });
 
     setState(() {
-      _status = "Connected";
+      setTerminalText("Connected");
     });
     return true;
   }
 
+  /// 타임 스탬프
   String getDateToString() {
     var date = DateTime.fromMillisecondsSinceEpoch(
         DateTime.now().millisecondsSinceEpoch);
@@ -94,6 +97,12 @@ class _HomeScreenState extends State<HomeScreen> {
         date.millisecond.toString().padLeft(3, '0');
   }
 
+  void setTerminalText(String data) {
+    TerminalText = (TerminalText == null
+        ? ""
+        : "$TerminalText" + "${getDateToString()} : " + "$data\n");
+  }
+
   void _getPorts() async {
     _ports = [];
     List<UsbDevice> devices = await UsbSerial.listDevices();
@@ -101,8 +110,6 @@ class _HomeScreenState extends State<HomeScreen> {
       _openPort(null);
     }
 
-    TerminalText =
-        TerminalText == null ? "" : "$TerminalText" + "${getDateToString()}\n";
     print(devices);
 
     devices.forEach((device) {
@@ -162,42 +169,65 @@ class _HomeScreenState extends State<HomeScreen> {
               icon: Icon(Icons.usb)),
           IconButton(onPressed: () {}, icon: Icon(Icons.delete_rounded)),
           IconButton(onPressed: () {}, icon: Icon(Icons.search)),
-          IconButton(onPressed: () {}, icon: Icon(Icons.add_circle)),
+          IconButton(onPressed: () {}, icon: Icon(Icons.dashboard_outlined)),
         ],
-        backgroundColor: HomeScreen.my_darkblue,
       ),
       drawer: Container(
-        width: MediaQuery.of(context).size.width * 0.4,
+        width: MediaQuery.of(context).size.width * 0.15,
         child: Drawer(
           child: ListView(
             padding: EdgeInsets.zero,
             children: [
               const DrawerHeader(
                 decoration: BoxDecoration(
-                  color: Colors.blue,
+                  color: MyApp.my_darkblue,
                 ),
-                child: Text('Drawer Header'),
+                child: Icon(Icons.usb),
               ),
               ListTile(
-                title: const Text('Item 1'),
+                title: const Icon(Icons.list_alt_rounded),
                 onTap: () {
-                  // Update the state of the app.
-                  // ...
-                  Navigator.pop(context);
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                        builder: (context) => const DevicesPage()),
+                  );
                 },
               ),
               ListTile(
-                title: const Text('Item 2'),
+                title: const Icon(Icons.shop_outlined),
                 onTap: () {
-                  // Update the state of the app.
-                  // ...
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                        builder: (context) => const AdPaymentPage()),
+                  );
+                },
+              ),
+              ListTile(
+                title: const Icon(Icons.settings),
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                        builder: (context) => const SettingPage()),
+                  );
+                },
+              ),
+              ListTile(
+                title: const Icon(Icons.info_outline_rounded),
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => const InfoPage()),
+                  );
                 },
               ),
             ],
           ),
         ),
       ),
-      backgroundColor: HomeScreen.my_darkblue,
+      backgroundColor: MyApp.my_darkblue,
       body: Column(
         children: [
           Expanded(
@@ -205,13 +235,15 @@ class _HomeScreenState extends State<HomeScreen> {
             child: Container(
               width: double.infinity,
               decoration: BoxDecoration(
-                  border: Border.all(color: HomeScreen.my_white),
+                  border: Border.all(color: MyApp.my_white),
                   borderRadius: BorderRadius.circular(8.0)),
-              child: SingleChildScrollView(
-                controller: _scrollController,
-                child: Text(
-                  (TerminalText == null) ? "" : "$TerminalText",
-                  style: TextStyle(color: HomeScreen.my_white),
+              child: Scrollbar(
+                child: SingleChildScrollView(
+                  controller: _scrollController,
+                  child: Text(
+                    (TerminalText == null) ? "" : "$TerminalText",
+                    style: TextStyle(color: MyApp.my_white),
+                  ),
                 ),
               ),
             ),
@@ -228,7 +260,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   child: TextField(
                     maxLines: 1,
                     decoration: InputDecoration(
-                      labelStyle: TextStyle(color: HomeScreen.my_red),
+                      labelStyle: TextStyle(color: MyApp.my_red),
                       focusedBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.all(Radius.circular(10.0)),
                         borderSide:
@@ -243,7 +275,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         borderRadius: BorderRadius.all(Radius.circular(10.0)),
                       ),
                     ),
-                    style: TextStyle(color: HomeScreen.my_white),
+                    style: TextStyle(color: MyApp.my_white),
                   ),
                 ),
                 Expanded(
@@ -251,11 +283,15 @@ class _HomeScreenState extends State<HomeScreen> {
                   child: IconButton(
                     icon: Icon(Icons.send_rounded),
                     onPressed: _port == null
-                        ? null
+                        ? () {
+                            print("port is null");
+                          }
                         : () async {
                             if (_port == null) {
+                              print("port until null");
                               return;
                             }
+                            print("send data");
                             String data = _textController.text + "\r\n";
                             await _port!
                                 .write(Uint8List.fromList(data.codeUnits));
@@ -264,6 +300,12 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                 )
               ],
+            ),
+          ),
+          Expanded(
+            child: Container(
+              height: context.watch<AdmodState>().show ? 50 : 0,
+              child: null,
             ),
           ),
         ],
