@@ -2,14 +2,13 @@ import 'dart:async';
 import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 import 'package:test_usb_serial_1/main.dart';
 import 'package:test_usb_serial_1/screen/devices_page.dart';
 import 'package:test_usb_serial_1/screen/settine_page.dart';
 import 'package:usb_serial/transaction.dart';
 import 'package:usb_serial/usb_serial.dart';
 
-import '../provider/myProvider.dart';
+import '../admodbar/admodbar.dart';
 import 'adpayment_page.dart';
 import 'infomation_page.dart';
 
@@ -148,6 +147,10 @@ class _TerminalPageState extends State<TerminalPage> {
     });
 
     _getPorts();
+
+    Timer.periodic(Duration(seconds: 1), (Timer t) {
+      setState(() {});
+    });
   }
 
   @override
@@ -302,12 +305,7 @@ class _TerminalPageState extends State<TerminalPage> {
               ],
             ),
           ),
-          Expanded(
-            child: Container(
-              height: context.watch<AdmodState>().show ? 50 : 0,
-              child: null,
-            ),
-          ),
+          AdmodBar(context),
         ],
       ),
 

@@ -25,10 +25,10 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       home: TerminalPage(),
       theme: ThemeData(
-        appBarTheme: AppBarTheme(color: my_darkblue),
-        iconTheme: IconThemeData(color: my_white),
-        drawerTheme: DrawerThemeData(backgroundColor: my_white),
-      ),
+          appBarTheme: AppBarTheme(color: my_darkblue),
+          iconTheme: IconThemeData(color: my_white),
+          drawerTheme: DrawerThemeData(backgroundColor: my_white),
+          scaffoldBackgroundColor: my_darkblue),
     );
   }
 }
